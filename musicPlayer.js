@@ -45,6 +45,7 @@ export default class MusicPlayer extends Component {
 	        spinValue: new Animated.Value(0),
 	        playIcon: 'pause-circle-outline',
 	        playModeIcon: 'repeat',
+			musicInfo: {},
 	    }
 		// this.spinAnimated = Animated.timing(this.state.spinValue, {
 		// 	toValue: 1,
@@ -83,6 +84,10 @@ export default class MusicPlayer extends Component {
 	//       	})
 	//   	}
 	// }
+	componentWillMount() {
+	    // this.spin()
+	    this.setState({musicInfo: mockData.list[this.state.currentIndex]})
+	}
 
 	formatMediaTime(duration) {
 	    let min = Math.floor(duration / 60)
@@ -111,6 +116,7 @@ export default class MusicPlayer extends Component {
 			like: false,
 			sliderValue: 0.00,
 			currentTime: 0.00,
+			musicInfo: {},
 		})
 	}
 
@@ -133,7 +139,6 @@ export default class MusicPlayer extends Component {
 	}
 
 	onChangeMode(playMode) {
-		console.log(playMode);
 		playMode = (playMode + 1) % 3
 		switch (playMode) {
 			case 0:
@@ -164,10 +169,10 @@ export default class MusicPlayer extends Component {
 		})
 	}
 
-	nextMusic() {
+	nextMusic(currentIndex) {
 		this.reset()
 		this.setState({
-			currentIndex: (this.state.currentIndex - 1 + mockData.list.length) % mockData.list.length,
+			currentIndex: currentIndex
 		})
 	}
 
@@ -175,9 +180,23 @@ export default class MusicPlayer extends Component {
 		console.log('click list');
 	}
 
-	onEnd() {
-		console.log('播放完毕');
-		this.nextMusic()
+	onProgress(data) {
+		this.setTime(data)
+		if (parseInt(this.state.currentTime) == parseInt(this.state.duration)) {
+			switch (this.state.playMode) {
+				case 0:
+					this.nextMusic((this.state.currentIndex - 1 + mockData.list.length) % mockData.list.length)
+					break
+				case 1:
+					//已经是单曲循环
+					break
+				case 2:
+					this.nextMusic(Math.floor(Math.random() * mockData.list.length))
+					break
+				default:
+					break
+			}
+		}
 	}
 
 	render() {
@@ -257,7 +276,7 @@ export default class MusicPlayer extends Component {
 							<TouchableOpacity onPress={() => this.play()}>
 								<Icon name={this.state.playIcon} size={60} color={commonStyle.white}/>
 							</TouchableOpacity>
-							<TouchableOpacity onPress={() => this.nextMusic()}>
+							<TouchableOpacity onPress={() => this.nextMusic((this.state.currentIndex - 1 + mockData.list.length) % mockData.list.length)}>
 								<Icon name={'skip-next'} size={35} color={commonStyle.white}/>
 							</TouchableOpacity>
 							<TouchableOpacity onPress={() => this.openMusicList()}>
@@ -270,11 +289,11 @@ export default class MusicPlayer extends Component {
 						source={{uri: musicInfo.url}}
 						volume={1.0}
 						paused={this.state.paused}						// true代表暂停，默认为false
-						repeat={false}						// 是否重复播放
+						repeat={true}						// 是否重复播放
 						playInBackground={true}				// 当app转到后台运行的时候，播放是否暂停
-						onLoadStart={() => console.info('音乐开始加载')}
+						onLoadStart={this.loadStart}
 						onLoad={data => this.setDuration(data)}
-						onProgress={data => this.setTime(data)}	//进度控制，每250ms调用一次，以获取视频播放的进度
+						onProgress={(data) => this.onProgress(data)}	//进度控制，每250ms调用一次，以获取视频播放的进度
 						onEnd={() => this.onEnd()}
 						onError={() => console.info('音乐加载出错')}
 						onBuffer={this.onBuffer}
