@@ -158,7 +158,7 @@ export default class MusicPlayer extends Component {
 	preMusic() {
 		this.reset()
 		this.setState({
-			currentIndex: (this.state.currentIndex + 1) % mockData.list.length,
+			currentIndex: (this.state.currentIndex - 1 + mockData.list.length) % mockData.list.length,
 		})
 	}
 
@@ -185,7 +185,7 @@ export default class MusicPlayer extends Component {
 		if (parseInt(this.state.currentTime) == parseInt(this.state.duration)) {
 			switch (this.state.playMode) {
 				case 0:
-					this.nextMusic((this.state.currentIndex - 1 + mockData.list.length) % mockData.list.length)
+					this.nextMusic((this.state.currentIndex + 1) % mockData.list.length)
 					break
 				case 1:
 					//已经是单曲循环
@@ -204,6 +204,20 @@ export default class MusicPlayer extends Component {
 	    return (
 			<View style={styles.container}>
 				<View style={styles.bgContainer}>
+					<View style={styles.navBarStyle}>
+	  					<View style={styles.navBarContent}>
+							<TouchableOpacity onPress={() => alert('pop')}>
+		  						<Icon name={'arrow-back'} size={25} color={commonStyle.white}/>
+							</TouchableOpacity>
+							<View style={{alignItems: 'center'}}>
+		  						<Text style={styles.title}>{musicInfo.title}</Text>
+		  						<Text style={styles.subTitle}>子标题</Text>
+							</View>
+							<TouchableOpacity  onPress={() => alert('分享')}>
+		  						<Icon name={'share'} size={25} color={commonStyle.white}/>
+							</TouchableOpacity>
+	  					</View>
+					</View>
 					<View style={styles.djContainer}>
 						<View
 							style={styles.djCard}>
@@ -276,7 +290,7 @@ export default class MusicPlayer extends Component {
 							<TouchableOpacity onPress={() => this.play()}>
 								<Icon name={this.state.playIcon} size={60} color={commonStyle.white}/>
 							</TouchableOpacity>
-							<TouchableOpacity onPress={() => this.nextMusic((this.state.currentIndex - 1 + mockData.list.length) % mockData.list.length)}>
+							<TouchableOpacity onPress={() => this.nextMusic((this.state.currentIndex + 1) % mockData.list.length)}>
 								<Icon name={'skip-next'} size={35} color={commonStyle.white}/>
 							</TouchableOpacity>
 							<TouchableOpacity onPress={() => this.openMusicList()}>
@@ -313,8 +327,33 @@ const styles = StyleSheet.create({
 		position: 'absolute',
 		height: deviceInfo.deviceHeight,
 		width: deviceInfo.deviceWidth,
-		backgroundColor: commonStyle.black,
+		backgroundColor: commonStyle.bgColor,
  	},
+	navBarStyle: {
+	    position: 'absolute',
+		flexDirection: 'column',
+		justifyContent: 'center',
+		alignItems: 'stretch',
+	    width: deviceInfo.deviceWidth,
+	    height: 56,
+	    borderBottomWidth: 0.5,
+	    borderColor: commonStyle.lineColor
+  	},
+  	navBarContent: {
+	    flexDirection: 'row',
+	    alignItems: 'center',
+	    justifyContent: 'space-between',
+	    marginHorizontal: 16,
+	},
+	title: {
+	    color: commonStyle.white,
+	    fontSize: 14
+  	},
+  	subTitle: {
+	    color: commonStyle.white,
+	    fontSize: 11,
+	    marginTop: 5
+  	},
 	bgCD: {
 		width: 260,
 		height: 260,
