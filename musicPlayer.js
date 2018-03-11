@@ -6,6 +6,7 @@ import {
 	StyleSheet,
 	Image,
 	Slider,
+	StatusBar,
 	Animated,
 	Easing,
 	Platform,
@@ -203,6 +204,10 @@ export default class MusicPlayer extends Component {
 	    let musicInfo = mockData.list[this.state.currentIndex]
 	    return (
 			<View style={styles.container}>
+				<StatusBar
+					translucent={true}
+					backgroundColor='rgba(0,0,0,0)'
+	   	 		/>
 				<View style={styles.bgContainer}>
 					<View style={styles.navBarStyle}>
 	  					<View style={styles.navBarContent}>
@@ -336,6 +341,7 @@ const styles = StyleSheet.create({
 		alignItems: 'stretch',
 	    width: deviceInfo.deviceWidth,
 	    height: 56,
+		top: 16,
 	    borderBottomWidth: 0.5,
 	    borderColor: commonStyle.lineColor
   	},
