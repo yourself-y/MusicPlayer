@@ -14,7 +14,7 @@ import {
 } from 'react-native'
 import { commonStyle } from './commonStyle'
 import Video from 'react-native-video'
-import Icon from 'react-native-vector-icons/FontAwesome'
+import Icon from 'react-native-vector-icons/MaterialIcons'
 
 const mockData = require('./musicList.json')
 const deviceInfo = {
@@ -31,21 +31,20 @@ const header = {
 export default class MusicPlayer extends Component {
 	constructor(props) {
 	    super(props)
-		this.player = ''
 		// this.rotation = true
 		this.musicList = []
 	    this.state = {
 			viewRef: null,
+			like: false,
 	        paused: false,
 	        duration: 0.00,
-	        slideValue: 0.00,
+	        sliderValue: 0.00,
 	        currentTime: 0.00,
 	        currentIndex: 0,
 	        playMode: 0,
 	        spinValue: new Animated.Value(0),
-	        playIcon: 'play-circle',	//pause-circle
-	        playModeIcon: 'random',		//repeat
-	        musicInfo: {},
+	        playIcon: 'pause-circle-outline',
+	        playModeIcon: 'repeat',
 	    }
 		// this.spinAnimated = Animated.timing(this.state.spinValue, {
 		// 	toValue: 1,
@@ -84,8 +83,41 @@ export default class MusicPlayer extends Component {
 	//       	})
 	//   	}
 	// }
+
+	formatMediaTime(duration) {
+	    let min = Math.floor(duration / 60)
+	    let second = duration - min * 60
+	    min = min >= 10 ? min : '0' + min
+	    second = second >= 10 ? second : '0' + second
+	    return min + ':' + second
+	}
+
+	setDuration(data) {
+		this.setState({
+			duration: data.duration,
+		})
+	}
+
+	setTime(data) {
+		let sliderValue = parseInt(data.currentTime)
+		this.setState({
+			currentTime: data.currentTime,
+			sliderValue: sliderValue,
+		})
+	}
+
+	reset() {
+		this.setState({
+			like: false,
+			sliderValue: 0.00,
+			currentTime: 0.00,
+		})
+	}
+
 	like() {
-		console.log('click like');
+		this.setState({
+			like: !this.state.like,
+		})
 	}
 
 	download() {
@@ -100,24 +132,52 @@ export default class MusicPlayer extends Component {
 		console.log('click more');
 	}
 
-	onChangeMode() {
-		console.log('click mode');
+	onChangeMode(playMode) {
+		console.log(playMode);
+		playMode = (playMode + 1) % 3
+		switch (playMode) {
+			case 0:
+		        this.setState({playMode, playModeIcon: 'repeat'})
+		        break
+	      	case 1:
+		        this.setState({playMode, playModeIcon: 'repeat-one'})
+		        break
+	      	case 2:
+		        this.setState({playMode, playModeIcon: 'shuffle'})
+		        break
+	      	default:
+	        	break
+		}
 	}
 
 	preMusic() {
-		console.log('click pre');
+		this.reset()
+		this.setState({
+			currentIndex: (this.state.currentIndex + 1) % mockData.list.length,
+		})
 	}
 
 	play() {
-		console.log('click play');
+		this.setState({
+			paused: !this.state.paused,
+			playIcon: this.state.paused ? 'pause-circle-outline' : 'play-circle-outline',
+		})
 	}
 
 	nextMusic() {
-		console.log('click next');
+		this.reset()
+		this.setState({
+			currentIndex: (this.state.currentIndex - 1 + mockData.list.length) % mockData.list.length,
+		})
 	}
 
 	openMusicList() {
 		console.log('click list');
+	}
+
+	onEnd() {
+		console.log('播放完毕');
+		this.nextMusic()
 	}
 
 	render() {
@@ -153,64 +213,69 @@ export default class MusicPlayer extends Component {
 					<View style={{flex: 1}}>
 						<View style={styles.tool}>
 							<TouchableOpacity onPress={() => this.like()}>
-								<Icon name={'heart-o'} size={25} color={commonStyle.white}/>
+								<Icon name={'favorite'} size={25} color={this.state.like?commonStyle.red:commonStyle.white}/>
 							</TouchableOpacity>
 							<TouchableOpacity onPress={() => this.download()}>
-								<Icon name={'download'} size={25} color={commonStyle.white}/>
+								<Icon name={'file-download'} size={25} color={commonStyle.white}/>
 							</TouchableOpacity>
 							<TouchableOpacity onPress={() => this.comment()}>
-								<Icon name={'commenting'} size={25} color={commonStyle.white}/>
+								<Icon name={'chat-bubble-outline'} size={25} color={commonStyle.white}/>
 							</TouchableOpacity>
 							<TouchableOpacity onPress={() => this.more()}>
-								<Icon name={'ellipsis-v'} size={25} color={commonStyle.white}/>
+								<Icon name={'more-vert'} size={25} color={commonStyle.white}/>
 							</TouchableOpacity>
 						</View>
 						<View style={styles.progressStyle}>
 							<Text style={{width: 35, fontSize: 11, color: commonStyle.white, marginLeft: 5}}>
-								00:00
+								{this.formatMediaTime(Math.floor(this.state.currentTime))}
 							</Text>
 							<Slider
-								style={styles.slider}
+								ref='slider'
+								style={{flex: 1}}
+								value={this.state.sliderValue}
 								maximumValue={this.state.duration}
+								thumbTintColor={commonStyle.white}
 								minimumTrackTintColor={commonStyle.themeColor}
 								maximumTrackTintColor={commonStyle.iconGray}
 								step={1}
+								onValueChange={value => this.setState({currentTime: value})}
+								onSlidingComplete={value => this.refs.video.seek(value)}//调到指定位置播放
 							/>
 							<View style={{width: 35, alignItems: 'flex-end', marginRight: 5}}>
 								<Text style={{fontSize: 11, color: commonStyle.white}}>
-									05:00
+									{this.formatMediaTime(Math.floor(this.state.duration))}
 								</Text>
 							</View>
 						</View>
 						<View style={styles.toolBar}>
-							<TouchableOpacity onPress={() => this.onChangeMode()}>
-								<Icon name={'random'} size={30} color={commonStyle.white}/>
+							<TouchableOpacity onPress={() => this.onChangeMode(this.state.playMode)}>
+								<Icon name={this.state.playModeIcon} size={30} color={commonStyle.white}/>
 							</TouchableOpacity>
 							<TouchableOpacity onPress={() => this.preMusic()}>
-								<Icon name={'step-backward'} size={35} color={commonStyle.white}/>
+								<Icon name={'skip-previous'} size={35} color={commonStyle.white}/>
 							</TouchableOpacity>
 							<TouchableOpacity onPress={() => this.play()}>
-								<Icon name={'play-circle-o'} size={60} color={commonStyle.white}/>
+								<Icon name={this.state.playIcon} size={60} color={commonStyle.white}/>
 							</TouchableOpacity>
 							<TouchableOpacity onPress={() => this.nextMusic()}>
-								<Icon name={'step-forward'} size={35} color={commonStyle.white}/>
+								<Icon name={'skip-next'} size={35} color={commonStyle.white}/>
 							</TouchableOpacity>
 							<TouchableOpacity onPress={() => this.openMusicList()}>
-								<Icon name={'bars'} size={30} color={commonStyle.white}/>
+								<Icon name={'playlist-play'} size={30} color={commonStyle.white}/>
 							</TouchableOpacity>
 						</View>
 					</View>
 					<Video
-						ref={'player'}
+						ref='video'
 						source={{uri: musicInfo.url}}
 						volume={1.0}
-						paused={false}						// true代表暂停，默认为false
+						paused={this.state.paused}						// true代表暂停，默认为false
 						repeat={false}						// 是否重复播放
 						playInBackground={true}				// 当app转到后台运行的时候，播放是否暂停
 						onLoadStart={() => console.info('音乐开始加载')}
-						onLoad={() => console.info('音乐加载完成')}
-						// onProgress={(data) => this.setTime(data)}	//进度控制，每250ms调用一次，以获取视频播放的进度
-						onEnd={() => console.info('音乐播放完毕')}
+						onLoad={data => this.setDuration(data)}
+						onProgress={data => this.setTime(data)}	//进度控制，每250ms调用一次，以获取视频播放的进度
+						onEnd={() => this.onEnd()}
 						onError={() => console.info('音乐加载出错')}
 						onBuffer={this.onBuffer}
 						onTimedMetadata={this.onTimedMetadata}/>
@@ -229,7 +294,7 @@ const styles = StyleSheet.create({
 		position: 'absolute',
 		height: deviceInfo.deviceHeight,
 		width: deviceInfo.deviceWidth,
-		backgroundColor: commonStyle.red,
+		backgroundColor: commonStyle.black,
  	},
 	bgCD: {
 		width: 260,
@@ -262,9 +327,6 @@ const styles = StyleSheet.create({
 	    marginHorizontal: 10,
 	    alignItems: 'center',
 		top: 240,
-	},
- 	slider: {
-	    flex: 1,
 	},
 	toolBar: {
 		flexDirection: 'row',
