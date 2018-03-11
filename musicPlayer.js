@@ -16,11 +16,11 @@ import {
 import { commonStyle } from './commonStyle'
 import Video from 'react-native-video'
 import Icon from 'react-native-vector-icons/MaterialIcons'
+import { BlurView, VibrancyView } from 'react-native-blur'
 
 const mockData = require('./musicList.json')
 const deviceInfo = {
 	deviceWidth: Dimensions.get('window').width,
-  // deviceHeight: Platform.OS === 'ios' ? Dimensions.get('window').height : Dimensions.get('window').height - 24
 	deviceHeight: Dimensions.get('window').height,
 }
 
@@ -32,8 +32,7 @@ const header = {
 export default class MusicPlayer extends Component {
 	constructor(props) {
 	    super(props)
-		// this.rotation = true
-		this.musicList = []
+		this.rotation = false
 	    this.state = {
 			viewRef: null,
 			like: false,
@@ -48,45 +47,46 @@ export default class MusicPlayer extends Component {
 	        playModeIcon: 'repeat',
 			musicInfo: {},
 	    }
-		// this.spinAnimated = Animated.timing(this.state.spinValue, {
-		// 	toValue: 1,
-		// 	duration: 6000,
-		// 	easing: Easing.inOut(Easing.linear)
-    	// })
+		this.spinAnimated = Animated.timing(this.state.spinValue, {
+			toValue: 1,
+			duration: 50000,
+			easing: Easing.inOut(Easing.linear)
+    	})
 	}
 
-	// spining() {
-	//     if (this.rotation) {
-	// 		this.state.spinValue.setValue(0)
-	// 		this.spinAnimated.start(() => {		//????
-	// 			this.spining()
-	// 		})
-	//     }
-  	// }
-	//
-	// spin() {
-	//     this.rotation = !this.rotation
-	//     if (this.rotation) {
-	// 		this.spinAnimated.start(() => {
-	// 	        this.spinAnimated = Animated.timing(this.state.spinValue, {
-	// 				toValue: 1,
-	// 	          	duration: 6000,
-	// 			  	easing: Easing.inOut(Easing.linear)
-	// 	        })
-	// 			this.spining()
-	//     	})
-	// 	} else {
-	// 		this.state.spinValue.stopAnimation((oneTimeRotate) => {
-	// 	        this.spinAnimated = Animated.timing(this.state.spinValue, {
-	// 		          toValue: 1,
-	// 		          duration: (1 - oneTimeRotate) * 6000,
-	// 		          easing: Easing.inOut(Easing.linear)
-	// 	        })
-	//       	})
-	//   	}
-	// }
+	spining() {
+	    if (this.rotation) {
+			this.state.spinValue.setValue(0)
+			this.spinAnimated.start(() => {
+				this.spining()		//finished后的回调函数，一直旋转
+			})
+	    }
+  	}
+
+	spin() {
+	    this.rotation = !this.rotation
+	    if (this.rotation) {
+			this.spinAnimated.start(() => {
+		        this.spinAnimated = Animated.timing(this.state.spinValue, {
+					toValue: 1,
+		          	duration: 50000,
+				  	easing: Easing.inOut(Easing.linear)
+		        })
+				this.spining()
+	    	})
+		} else {
+			this.state.spinValue.stopAnimation((oneTimeRotate) => {
+		        this.spinAnimated = Animated.timing(this.state.spinValue, {
+			          toValue: 1,
+			          duration: (1 - oneTimeRotate) * 50000,
+			          easing: Easing.inOut(Easing.linear)
+		        })
+	      	})
+	  	}
+	}
+
 	componentWillMount() {
-	    // this.spin()
+	    this.spin()
 	    this.setState({musicInfo: mockData.list[this.state.currentIndex]})
 	}
 
@@ -164,6 +164,7 @@ export default class MusicPlayer extends Component {
 	}
 
 	play() {
+		this.spin()
 		this.setState({
 			paused: !this.state.paused,
 			playIcon: this.state.paused ? 'pause-circle-outline' : 'play-circle-outline',
@@ -200,13 +201,13 @@ export default class MusicPlayer extends Component {
 		}
 	}
 
-	render() {
+	renderPlayer() {
 	    let musicInfo = mockData.list[this.state.currentIndex]
 	    return (
 			<View style={styles.container}>
 				<StatusBar
 					translucent={true}
-					backgroundColor='rgba(0,0,0,0)'
+					backgroundColor='transparent'
 	   	 		/>
 				<View style={styles.bgContainer}>
 					<View style={styles.navBarStyle}>
@@ -238,7 +239,7 @@ export default class MusicPlayer extends Component {
 						        borderRadius: 85,
 						        alignSelf: 'center',
 						        position: 'absolute',
-								top: 49,
+								top: 46,
 						        transform: [{
 									rotate: this.state.spinValue.interpolate({
 										inputRange: [0, 1],
@@ -321,6 +322,33 @@ export default class MusicPlayer extends Component {
 			</View>
 		)
 	}
+
+	imageLoaded() {
+    	this.setState({ viewRef: findNodeHandle(this.backgroundImage) });
+  	}
+
+	render() {
+		const data = mockData.list[this.state.currentIndex]
+		return (
+      		data.url ?
+				<View style={styles.container}>
+		          	<Image
+			            ref={(img) => { this.backgroundImage = img}}
+			            style={styles.bgContainer}
+			            source={{uri: data.cover}}
+			            resizeMode='cover'
+			            onLoadEnd={() => this.imageLoaded()}
+		          	/>
+	                <BlurView
+	                  style={styles.absolute}
+	                  viewRef={this.state.viewRef}
+	                  blurType="dark"
+	                  blurAmount={10}
+	                />
+				{this.renderPlayer()}
+		        </View> : <View/>
+    	)
+	}
 }
 
 const styles = StyleSheet.create({
@@ -332,7 +360,6 @@ const styles = StyleSheet.create({
 		position: 'absolute',
 		height: deviceInfo.deviceHeight,
 		width: deviceInfo.deviceWidth,
-		backgroundColor: commonStyle.bgColor,
  	},
 	navBarStyle: {
 	    position: 'absolute',
@@ -365,16 +392,15 @@ const styles = StyleSheet.create({
 		height: 260,
 		alignSelf: 'center',
 		position: 'absolute',
-		top: 5,
 	},
 	djCard: {
-	    width: 270,
-	    height: 270,
+	    width: 260,
+	    height: 260,
 	    borderColor: commonStyle.gray,
-	    borderWidth: 10,
+	    borderWidth: 6,
 	    borderRadius: 190,
 	    alignSelf: 'center',
-	    opacity: 0.2,
+	    opacity: 0.1,
 	},
 	djContainer: {
 		top: 120,
